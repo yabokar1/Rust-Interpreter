@@ -1,4 +1,5 @@
 
+use crate::token::lookup_ident;
 use crate::token::Token;
 use crate::token::TokenKind;
 
@@ -34,6 +35,7 @@ impl Lexer {
     }
 
     fn next_token(&mut self) -> Token {
+        self.skip_whitespace();
         let token = match self.ch {
             '=' => Lexer::new_token(TokenKind::Assign, self.ch),
             ';' => Lexer::new_token(TokenKind::Semicolon, self.ch),
@@ -47,8 +49,14 @@ impl Lexer {
                 kind:TokenKind::Eof, 
                 literal: "".to_string()
                 },
-             _ => Lexer::new_token(TokenKind::Illegal, self.ch)
-            
+             _ => { return if Lexer::is_letter(self.ch) {
+                        let literal = self.read_identifier();
+                        let kind = lookup_ident(&literal);
+                        Token {kind, literal}
+                    } else {
+                        Lexer::new_token(TokenKind::Illegal, self.ch)
+                    }
+             }
         };
 
         self.read_char();
@@ -56,8 +64,32 @@ impl Lexer {
         return token;
     }
 
+    fn skip_whitespace(&mut self) {
+        while self.ch.is_ascii_whitespace() {
+            self.read_char();
+        }
+    }
+
+
     fn new_token(kind: TokenKind, ch: char) -> Token {
         Token {kind, literal: ch.to_string()}
+    }
+
+    fn is_letter(ch: char) -> bool {
+        ch.is_alphabetic() || ch == '_'
+    }
+
+    fn read_identifier(&mut self) -> String {
+        let mut identifier = String::new();
+
+        while Lexer::is_letter(self.ch) {
+            identifier.push(self.ch);
+            self.read_char();
+        }
+
+        identifier
+
+
     }
 } 
 
